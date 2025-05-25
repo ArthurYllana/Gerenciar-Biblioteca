@@ -1,0 +1,61 @@
+h1 {
+    color: var(--red);
+    font-size: 40px;
+}
+
+h2 {
+    color: var(--green);
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+a#entrar {
+    background-color: var(--blue);
+    display: block;
+    margin: 20px auto 0 auto;
+    width: 200px;
+    font-size: 25px;
+}
+
+.container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.card {
+    display: flex;
+    justify-content: space-between;
+    border-radius: 5px;
+    background-color: #ebebeb;
+    padding: 2rem;
+    min-width: 550px;
+    box-shadow: 4px 4px 3px #cfcfcf;
+}
+
+input[type=text], input[type=password] {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 15px;
+}
+
+input[type=text]:focus, input[type=password]:focus {
+    background-color: #e8edef;
+}
+
+label {
+    margin: 5px;
+    font-weight: bold;
+}
+
+img.icon {
+    width: 200px;
+    height: 200px;
+}
