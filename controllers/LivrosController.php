@@ -1,56 +1,72 @@
 <?php
 
-require_once "../models/Livros.php";
+require_once "../models/Livro.php";
 require_once "../models/Database.php";
 
-class LivroController {
-    private $livroModel;
-    private $db;
+// O controlador vai gerenciar as telas e os objetos da classe Livro
 
+class LivroController {
+    // atributos
+    private $livroModel; // objeto da classe Livro
+    private $db; // opcional
+
+    // métodos
     public function __construct() {
-        $this->db = new Database();
+        // Toda vez que inicializa o controlador, inicializa um objeto Livro
+        $this->db = new Database('localhost','biblioteca','root','');
         $this->livroModel = new Livro($this->db->getConnection());
     }
 
-    public function listarTodos() {
-        $livros = $this->livroModel->buscarTodos();
-        include "../views/LivrosListarTodos.php";
+    // Funções que são chamadas quando o usuário CLICA nos botões correspondentes na tela (view)
+    // papel deles é chamar as funções do Livro model
+
+    public function salvar() {
+        $this->livroModel->salvar($_POST['titulo'], $_POST['autor'], $_POST['ano_publicacao'], $_POST['categoria']);
+        $_SESSION['mensagem'] = "Livro adicionado com sucesso!"; // session para mensagem se enviado com sucessso
+        header("Location: ../views/livro_index.php");
+        exit;
     }
 
-    public function adicionar($titulo, $autor, $ano_publicacao, $categoria) {
-        if ($this->livroModel->inserir($titulo, $autor, $ano_publicacao, $categoria)) {
-            $_SESSION['mensagem'] = "<p class='success'>Livro adicionado com sucesso!</p>";
-        } else {
-            $_SESSION['mensagem'] = "<p class='error'>Erro ao adicionar livro.</p>";
+    public function listar() {
+        $livros = $this->livroModel->listar();
+        require "../views/listar.php"; // chama a tela que lista os livros
+    }
+
+    public function alterar() {
+        if ($_POST) { // verifica se o formulário foi submetido (via POST)
+            $this->livroModel->alterar($_POST['id'], $_POST['titulo'], $_POST['autor'], $_POST['ano_publicacao'], $_POST['categoria']);
+            $_SESSION['mensagem'] = "Livro alterado com sucesso!";
+            header("Location: ../views/livro_index.php");
+            exit;
         }
     }
 
-    public function atualizar($id, $titulo, $autor, $ano_publicacao, $categoria) {
-        if ($this->livroModel->alterar($id, $titulo, $autor, $ano_publicacao, $categoria)) {
-            $_SESSION['mensagem'] = "<p class='success'>Livro atualizado com sucesso!</p>";
-        } else {
-            $_SESSION['mensagem'] = "<p class='error'>Erro ao atualizar livro.</p>";
+    public function excluir() {
+        if (isset($_GET['id'])) { // verifica se livro com este id existe (via GET)
+            $this->livroModel->excluir($_GET['id']);
+            $_SESSION['mensagem'] = "Livro excluído com sucesso!";
+            header("Location: ../views/livro_index.php");
+            exit;
+        }
+        else {
+            die("ID não informado.");
         }
     }
 
-    public function deletar($id) {
-        if ($this->livroModel->apagar($id)) {
-            $_SESSION['mensagem'] = "<p class='success'>Livro deletado com sucesso!</p>";
-        } else {
-            $_SESSION['mensagem'] = "<p class='error'>Erro ao deletar livro.</p>";
+    // Função extra que é chamada quando for alterar
+    // ela mostra um form para editar diretamente por ele
+    public function editarForm() {
+        if (!isset($_GET['id'])) {
+            die("ID não informado.");
         }
-    }
 
-    public function editar($id) {
-        $livro = $this->livroModel->buscar($id);
-        if ($livro) {
-            $_SESSION['livro_edicao'] = $livro;
-            header("Location: ../views/index.php");
-            exit();
-        } else {
-            $_SESSION['mensagem'] = "<p class='error'>Livro não encontrado.</p>";
-            header("Location: ../views/index.php");
-            exit();
+        $livro = $this->livroModel->buscarPorId($_GET['id']); // verifica se o livro com esse ID existe
+        if (!$livro) {
+            die("Livro não encontrado.");
         }
+
+        require "../views/editar.php";
     }
 }
+
+?>
