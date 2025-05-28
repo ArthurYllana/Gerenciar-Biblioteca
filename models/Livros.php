@@ -1,8 +1,7 @@
 <?php
 
 class Livro {
-    // atributos
-    private $conexao; // conexão com o banco de dados do tipo Database
+    private $conexao;
     private $tableName = 'livros';
     
     public $id;
@@ -11,74 +10,90 @@ class Livro {
     public $ano_publicacao;
     public $categoria;
 
-    // métodos
-    public function __construct($db) { // toda vez que cria um objeto Livro precisa passar a database
-        $this->conexao = $db;
+    public function __construct($db) {
+        $this->conexao = $db->getConnection();
     }
 
-    // REGISTRAR LIVRO
     public function salvar($titulo, $autor, $ano_publicacao, $categoria) {
-        // inserir usando parâmetros
-        $comandoSQL = "INSERT INTO `{$this->tableName}` (titulo, autor, ano_publicacao, categoria) VALUES (?, ?, ?, ?)";
+        $comandoSQL = "INSERT INTO `{$this->tableName}` 
+                      (titulo, autor, ano_publicacao, categoria) 
+                      VALUES (:titulo, :autor, :ano, :categoria)";
+        
         try {
-            $acesso = $this->conexao->prepare($comandoSQL);
-            $acesso->execute([$titulo, $autor, $ano_publicacao, $categoria]);
-        }
-        catch (PDOException $erro) {
-            echo "Erro ao registrar o livro: " . $erro->getMessage();
+            $stmt = $this->conexao->prepare($comandoSQL);
+            $stmt->bindParam(':titulo', $titulo);
+            $stmt->bindParam(':autor', $autor);
+            $stmt->bindParam(':ano', $ano_publicacao, PDO::PARAM_INT);
+            $stmt->bindParam(':categoria', $categoria);
+            
+            return $stmt->execute();
+        } catch (PDOException $erro) {
+            error_log("Erro ao registrar livro: " . $erro->getMessage());
+            throw new Exception("Erro ao registrar o livro.");
         }
     }
 
-    // LISTAR TODOS LIVROS REGISTRADOS
     public function listar() {
-        $comandoSQL = "SELECT * FROM `{$this->tableName}` ORDER BY `id` DESC"; // ordenar por ID
+        $comandoSQL = "SELECT * FROM `{$this->tableName}` ORDER BY `id` DESC";
+        
         try {
-            $acesso = $this->conexao->prepare($comandoSQL); // prepare() valida o comando SQL para o acesso
-            $acesso->execute(); // executa o comando SQL
-            return $acesso;
-        }
-        catch (PDOException $erro) {
-            echo "Erro ao listar os livros: " . $erro->getMessage();
+            $stmt = $this->conexao->prepare($comandoSQL);
+            $stmt->execute();
+            return $stmt;
+        } catch (PDOException $erro) {
+            error_log("Erro ao listar livros: " . $erro->getMessage());
+            throw new Exception("Erro ao listar os livros.");
         }
     }
 
-    // BUSCAR LIVRO PELO ID (usado para alterar e excluir)
     public function buscarPorId($id) {
-        // retornar linha da tabela com o id igual
-        $comandoSQL = "SELECT * FROM {$this->tableName} WHERE id = ?";
+        $comandoSQL = "SELECT * FROM `{$this->tableName}` WHERE id = :id";
+        
         try {
-            $acesso = $this->conexao->prepare($comandoSQL);
-            $acesso->execute([$id]);
-            return $acesso->fetch(PDO::FETCH_ASSOC); // retorna a linha encontrada
-        }
-        catch (PDOException $erro) {
-            echo "Erro ao encontrar o livro: " . $erro->getMessage();
+            $stmt = $this->conexao->prepare($comandoSQL);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetch();
+        } catch (PDOException $erro) {
+            error_log("Erro ao buscar livro: " . $erro->getMessage());
+            throw new Exception("Erro ao encontrar o livro.");
         }
     }
 
-    // ALTERAR DADOS DO LIVRO
     public function alterar($id, $titulo, $autor, $ano_publicacao, $categoria) {
-        $comandoSQL = "UPDATE `{$this->tableName}` SET titulo = ?, autor = ?, ano_publicacao = ?, categoria = ? WHERE id = ?";
+        $comandoSQL = "UPDATE `{$this->tableName}` 
+                       SET titulo = :titulo, 
+                           autor = :autor, 
+                           ano_publicacao = :ano, 
+                           categoria = :categoria 
+                       WHERE id = :id";
+        
         try {
-            $acesso = $this->conexao->prepare($comandoSQL);
-            return $acesso->execute([$titulo, $autor, $ano_publicacao, $categoria, $id]);    
+            $stmt = $this->conexao->prepare($comandoSQL);
+            $stmt->bindParam(':titulo', $titulo);
+            $stmt->bindParam(':autor', $autor);
+            $stmt->bindParam(':ano', $ano_publicacao, PDO::PARAM_INT);
+            $stmt->bindParam(':categoria', $categoria);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            
+            return $stmt->execute();
+        } catch (PDOException $erro) {
+            error_log("Erro ao alterar livro: " . $erro->getMessage());
+            throw new Exception("Erro ao alterar dados do livro.");
         }
-        catch (PDOException $erro) {
-            echo "Erro ao alterar dados do livro: " . $erro->getMessage();
-        }    
     }
 
-    // APAGAR LIVRO
     public function excluir($id) {
-        $comandoSQL = "DELETE FROM `{$this->tableName}` WHERE id = ?";
+        $comandoSQL = "DELETE FROM `{$this->tableName}` WHERE id = :id";
+        
         try {
-            $acesso = $this->conexao->prepare($comandoSQL);
-            $acesso->execute([$id]);
-        }
-        catch (PDOException $erro) {
-            echo "Erro ao excluir o livro: " . $erro->getMessage();
+            $stmt = $this->conexao->prepare($comandoSQL);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (PDOException $erro) {
+            error_log("Erro ao excluir livro: " . $erro->getMessage());
+            throw new Exception("Erro ao excluir o livro.");
         }
     }
 }
-
 ?>

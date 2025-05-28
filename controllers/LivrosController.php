@@ -3,70 +3,125 @@
 require_once "../models/Livro.php";
 require_once "../models/Database.php";
 
-// O controlador vai gerenciar as telas e os objetos da classe Livro
-
 class LivroController {
-    // atributos
-    private $livroModel; // objeto da classe Livro
-    private $db; // opcional
+    private $livroModel;
+    private $db;
 
-    // métodos
     public function __construct() {
-        // Toda vez que inicializa o controlador, inicializa um objeto Livro
-        $this->db = new Database('localhost','biblioteca','root','');
-        $this->livroModel = new Livro($this->db->getConnection());
+        try {
+            $this->db = new Database('localhost', 'biblioteca', 'root', '');
+            $this->livroModel = new Livro($this->db);
+        } catch (Exception $e) {
+            die("Erro ao conectar com o banco de dados: " . $e->getMessage());
+        }
     }
 
-    // Funções que são chamadas quando o usuário CLICA nos botões correspondentes na tela (view)
-    // papel deles é chamar as funções do Livro model
-
     public function salvar() {
-        $this->livroModel->salvar($_POST['titulo'], $_POST['autor'], $_POST['ano_publicacao'], $_POST['categoria']);
-        $_SESSION['mensagem'] = "Livro adicionado com sucesso!"; // session para mensagem se enviado com sucessso
-        header("Location: ../views/livro_index.php");
-        exit;
+        try {
+            $this->validatePostData(['titulo', 'autor', 'ano_publicacao', 'categoria']);
+            
+            $this->livroModel->salvar(
+                trim($_POST['titulo']),
+                trim($_POST['autor']),
+                (int)$_POST['ano_publicacao'],
+                trim($_POST['categoria'])
+            );
+            
+            $this->setSuccessMessage("Livro adicionado com sucesso!");
+            $this->redirectToIndex();
+            
+        } catch (Exception $e) {
+            $this->handleError($e);
+        }
     }
 
     public function listar() {
-        $livros = $this->livroModel->listar();
-        require "../views/listar.php"; // chama a tela que lista os livros
+        try {
+            $livros = $this->livroModel->listar();
+            require "../views/listar.php";
+        } catch (Exception $e) {
+            $this->handleError($e);
+        }
     }
 
     public function alterar() {
-        if ($_POST) { // verifica se o formulário foi submetido (via POST)
-            $this->livroModel->alterar($_POST['id'], $_POST['titulo'], $_POST['autor'], $_POST['ano_publicacao'], $_POST['categoria']);
-            $_SESSION['mensagem'] = "Livro alterado com sucesso!";
-            header("Location: ../views/livro_index.php");
-            exit;
+        try {
+            $this->validatePostData(['id', 'titulo', 'autor', 'ano_publicacao', 'categoria']);
+            
+            $this->livroModel->alterar(
+                (int)$_POST['id'],
+                trim($_POST['titulo']),
+                trim($_POST['autor']),
+                (int)$_POST['ano_publicacao'],
+                trim($_POST['categoria'])
+            );
+            
+            $this->setSuccessMessage("Livro alterado com sucesso!");
+            $this->redirectToIndex();
+            
+        } catch (Exception $e) {
+            $this->handleError($e);
         }
     }
 
     public function excluir() {
-        if (isset($_GET['id'])) { // verifica se livro com este id existe (via GET)
-            $this->livroModel->excluir($_GET['id']);
-            $_SESSION['mensagem'] = "Livro excluído com sucesso!";
-            header("Location: ../views/livro_index.php");
-            exit;
-        }
-        else {
-            die("ID não informado.");
+        try {
+            if (!isset($_GET['id'])) {
+                throw new Exception("ID não informado.");
+            }
+            
+            $this->livroModel->excluir((int)$_GET['id']);
+            $this->setSuccessMessage("Livro excluído com sucesso!");
+            $this->redirectToIndex();
+            
+        } catch (Exception $e) {
+            $this->handleError($e);
         }
     }
 
-    // Função extra que é chamada quando for alterar
-    // ela mostra um form para editar diretamente por ele
     public function editarForm() {
-        if (!isset($_GET['id'])) {
-            die("ID não informado.");
+        try {
+            if (!isset($_GET['id'])) {
+                throw new Exception("ID não informado.");
+            }
+            
+            $livro = $this->livroModel->buscarPorId((int)$_GET['id']);
+            
+            if (!$livro) {
+                throw new Exception("Livro não encontrado.");
+            }
+            
+            require "../views/editar.php";
+            
+        } catch (Exception $e) {
+            $this->handleError($e);
         }
+    }
 
-        $livro = $this->livroModel->buscarPorId($_GET['id']); // verifica se o livro com esse ID existe
-        if (!$livro) {
-            die("Livro não encontrado.");
+    // Métodos auxiliares
+    private function validatePostData($requiredFields) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            throw new Exception("Método de requisição inválido.");
         }
+        
+        foreach ($requiredFields as $field) {
+            if (!isset($_POST[$field]) || empty(trim($_POST[$field]))) {
+                throw new Exception("O campo {$field} é obrigatório.");
+            }
+        }
+    }
 
-        require "../views/editar.php";
+    private function setSuccessMessage($message) {
+        $_SESSION['mensagem'] = $message;
+    }
+
+    private function redirectToIndex() {
+        header("Location: ../views/livro_index.php");
+        exit;
+    }
+
+    private function handleError($exception) {
+        $_SESSION['erro'] = $exception->getMessage();
+        $this->redirectToIndex();
     }
 }
-
-?>
