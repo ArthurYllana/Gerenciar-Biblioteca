@@ -9,7 +9,7 @@ class LivroController {
 
     public function __construct() {
         try {
-            $this->db = new Database('localhost', 'biblioteca', 'root', '');
+            $this->db = new Database('127.0.0.1', 'biblioteca', 'root', '');
             $this->livroModel = new Livro($this->db);
         } catch (Exception $e) {
             die("Erro ao conectar com o banco de dados: " . $e->getMessage());
@@ -21,10 +21,10 @@ class LivroController {
             $this->validatePostData(['titulo', 'autor', 'ano_publicacao', 'categoria']);
             
             $this->livroModel->salvar(
-                trim($_POST['titulo']),
-                trim($_POST['autor']),
+                substr(trim($_POST['titulo']), 0, 250),
+                substr(trim($_POST['autor']), 0, 250),
                 (int)$_POST['ano_publicacao'],
-                trim($_POST['categoria'])
+                substr(trim($_POST['categoria']), 0, 100)
             );
             
             $this->setSuccessMessage("Livro adicionado com sucesso!");
@@ -50,10 +50,10 @@ class LivroController {
             
             $this->livroModel->alterar(
                 (int)$_POST['id'],
-                trim($_POST['titulo']),
-                trim($_POST['autor']),
+                substr(trim($_POST['titulo']), 0, 250),
+                substr(trim($_POST['autor']), 0, 250),
                 (int)$_POST['ano_publicacao'],
-                trim($_POST['categoria'])
+                substr(trim($_POST['categoria']), 0, 100)
             );
             
             $this->setSuccessMessage("Livro alterado com sucesso!");
@@ -98,15 +98,54 @@ class LivroController {
         }
     }
 
-    // Métodos auxiliares
     private function validatePostData($requiredFields) {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             throw new Exception("Método de requisição inválido.");
         }
         
         foreach ($requiredFields as $field) {
-            if (!isset($_POST[$field]) || empty(trim($_POST[$field]))) {
+            if (!isset($_POST[$field])) {
                 throw new Exception("O campo {$field} é obrigatório.");
+            }
+            
+            // Validações específicas por campo
+            $value = trim($_POST[$field]);
+            
+            if ($field === 'titulo') {
+                if (empty($value)) {
+                    throw new Exception("O título não pode estar vazio.");
+                }
+                if (mb_strlen($value) > 250) {
+                    throw new Exception("O título não pode exceder 250 caracteres.");
+                }
+            }
+            
+            if ($field === 'autor') {
+                if (empty($value)) {
+                    throw new Exception("O autor não pode estar vazio.");
+                }
+                if (mb_strlen($value) > 250) {
+                    throw new Exception("O autor não pode exceder 250 caracteres.");
+                }
+            }
+            
+            if ($field === 'categoria') {
+                if (empty($value)) {
+                    throw new Exception("A categoria não pode estar vazia.");
+                }
+                if (mb_strlen($value) > 100) {
+                    throw new Exception("A categoria não pode exceder 100 caracteres.");
+                }
+            }
+            
+            if ($field === 'ano_publicacao') {
+                if (!is_numeric($value) || $value < 1000 || $value > 2099) {
+                    throw new Exception("Ano de publicação inválido (deve ser entre 1000 e 2099).");
+                }
+            }
+            
+            if ($field === 'id' && !is_numeric($value)) {
+                throw new Exception("ID inválido.");
             }
         }
     }

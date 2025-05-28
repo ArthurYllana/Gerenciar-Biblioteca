@@ -21,10 +21,10 @@ class Livro {
         
         try {
             $stmt = $this->conexao->prepare($comandoSQL);
-            $stmt->bindParam(':titulo', $titulo);
-            $stmt->bindParam(':autor', $autor);
+            $stmt->bindParam(':titulo', $titulo, PDO::PARAM_STR, 250);
+            $stmt->bindParam(':autor', $autor, PDO::PARAM_STR, 250);
             $stmt->bindParam(':ano', $ano_publicacao, PDO::PARAM_INT);
-            $stmt->bindParam(':categoria', $categoria);
+            $stmt->bindParam(':categoria', $categoria, PDO::PARAM_STR, 100);
             
             return $stmt->execute();
         } catch (PDOException $erro) {
@@ -70,10 +70,10 @@ class Livro {
         
         try {
             $stmt = $this->conexao->prepare($comandoSQL);
-            $stmt->bindParam(':titulo', $titulo);
-            $stmt->bindParam(':autor', $autor);
+            $stmt->bindParam(':titulo', $titulo, PDO::PARAM_STR, 250);
+            $stmt->bindParam(':autor', $autor, PDO::PARAM_STR, 250);
             $stmt->bindParam(':ano', $ano_publicacao, PDO::PARAM_INT);
-            $stmt->bindParam(':categoria', $categoria);
+            $stmt->bindParam(':categoria', $categoria, PDO::PARAM_STR, 100);
             $stmt->bindParam(':id', $id, PDO::PARAM_INT);
             
             return $stmt->execute();
